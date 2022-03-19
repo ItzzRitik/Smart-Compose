@@ -3,14 +3,16 @@ module.exports = {
   env: {
     node: true
   },
-  extends: [
-    'plugin:vue/essential',
-    '@vue/standard'
-  ],
+  extends: ['plugin:vue/vue3-essential', '@vue/standard'],
   parserOptions: {
     parser: '@babel/eslint-parser'
   },
   rules: {
+    indent: 'off',
+	'vue/no-v-model-argument': 'off',
+    'no-tabs': ['error', { allowIndentationTabs: true }],
+    'vue/script-indent': ['error', 'tab', { baseIndent: 1 }],
+    'vue/html-indent': ['error', 'tab', { baseIndent: 1 }],
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
   }
