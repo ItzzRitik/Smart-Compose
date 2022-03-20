@@ -9,8 +9,9 @@ module.exports = {
   },
   rules: {
     indent: 'off',
+	'vue/multi-word-component-names': 'off',
 	'vue/no-v-model-argument': 'off',
-    'no-tabs': ['error', { allowIndentationTabs: true }],
+    'no-tabs': 'off',
     'vue/script-indent': ['error', 'tab', { baseIndent: 1 }],
     'vue/html-indent': ['error', 'tab', { baseIndent: 1 }],
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',

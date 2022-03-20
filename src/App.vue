@@ -1,37 +1,53 @@
 <template>
 	<div class="smartCompose">
 		<VueEditor ref="vEditor" v-model="editorContent"/>
+		<SuggestionOverlay ref="suggestionRef" :suggestions=suggestions />
 	</div>
 </template>
 
 <script>
 	import { VueEditor } from 'vue2-editor'
+	import SuggestionOverlay from './components/Suggestion.vue'
+	import getSuggestions from './utils/suggestionService'
 
 	export default {
 		name: 'App',
 		data: () => ({
-			editorContent: '<p>Some Initial Content</p>'
+			editorContent: '<p>Some Initial Content</p>',
+			suggestions: []
 		}),
 		mounted () {
-			const editor = this.$refs.vEditor.quill
-			editor.on('text-change', function (delta, oldDelta, source) {
+			const app = this
+			const editor = app.$refs.vEditor.quill
+			const suggestionRef = app.$refs.suggestionRef
+			let suggestionService
+
+			editor.on('editor-change', async function (event, data) {
 				const selection = editor.root.ownerDocument.getSelection()
+				const text = editor.getText()
+				app.suggestions.length && (app.suggestions = [])
+
 				if (selection.rangeCount > 0) {
-					const range = selection.getRangeAt(0)
-					const rects = range.getClientRects()
+					const rects = selection.getRangeAt(0).getClientRects()
 					if (rects.length > 0) {
-						console.log(rects[0])
+						suggestionRef.$el.style.top = (rects[0].top + rects[0].height) + 'px'
+						suggestionRef.$el.style.left = rects[0].left + 'px'
 					}
+				}
+
+				if (event === 'selection-change') {
+					clearTimeout(suggestionService)
+					suggestionService = setTimeout(() => getSuggestions(text, data?.index)
+						.then((suggestionList) => (app.suggestions = suggestionList)), 100)
 				}
 			})
 		},
 		watch: {
-			editorContent: function (newContent) {
+			suggestions: function (newContent) {
+
 			}
 		},
-		components: {
-			VueEditor
-		}
+		components: { VueEditor, SuggestionOverlay }
 	}
 </script>
 
