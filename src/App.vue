@@ -1,7 +1,8 @@
 <template>
 	<div class="smartCompose">
-		<VueEditor ref="vEditor" v-model="editorContent"/>
-		<SuggestionOverlay :suggestions=suggestions :activeSuggestion=activeSuggestion :suggestionRect=suggestionRect />
+		<VueEditor ref="vEditor" v-model="editorContent" />
+		<SuggestionOverlay :suggestions=suggestions :activeSuggestion=activeEditorState.suggestion
+			:suggestionRect=suggestionRect :updateActiveSuggestion=updateActiveSuggestion />
 	</div>
 </template>
 
@@ -10,18 +11,19 @@
 	import SuggestionOverlay from './components/Suggestion.vue'
 	import getSuggestions from './utils/suggestionService'
 
+	let editor
+
 	export default {
 		name: 'App',
 		data: () => ({
-			editorContent: '<p>Some Initial Content</p>',
+			editorContent: '<p>Hello There, Welcome to Smart Compose Demo!</p>',
 			suggestions: [],
-			activeSuggestion: 0,
+			activeEditorState: { suggestion: 0, index: 0 },
 			suggestionRect: { top: 0, left: 0 }
 		}),
 		mounted () {
 			const app = this
-			const editor = app.$refs.vEditor.quill
-			this.editor = editor
+			editor = app.$refs.vEditor.quill
 			let suggestionService
 
 			editor.on('editor-change', async function (event, data) {
@@ -41,30 +43,42 @@
 				if (event === 'selection-change') {
 					clearTimeout(suggestionService)
 					suggestionService = setTimeout(() => getSuggestions(text, data?.index)
-						.then((suggestionList) => (app.suggestions = suggestionList)), 100)
+						.then((suggestionList) => {
+							app.activeEditorState.index = data?.index
+							app.suggestions = suggestionList
+						}), 100)
 				}
 			})
 		},
 		watch: {
+			editorContent: function () {},
 			suggestions: function () {
-				this.editor.keyboard.addBinding({ key: 'up', handler: this.suggestionUp })
-				this.editor.keyboard.addBinding({ key: 'down', handler: this.suggestionDown })
-				this.editor.keyboard.bindings[9].unshift({ key: 9, handler: this.acceptSuggestion })
-				this.editor.keyboard.bindings[13].unshift({ key: 13, handler: this.acceptSuggestion })
+				editor.keyboard.addBinding({ key: 'up', handler: this.suggestionUp })
+				editor.keyboard.addBinding({ key: 'down', handler: this.suggestionDown })
+				editor.keyboard.bindings[9].unshift({ key: 9, handler: this.acceptSuggestion })
+				editor.keyboard.bindings[13].unshift({ key: 13, handler: this.acceptSuggestion })
 			}
 		},
 		methods: {
 			suggestionUp: function () {
 				if (!this.suggestions.length) return true
-				this.activeSuggestion = Math.max(this.activeSuggestion - 1, 0)
+				this.activeEditorState.suggestion = Math.max(this.activeEditorState.suggestion - 1, 0)
 			},
 			suggestionDown: function () {
 				if (!this.suggestions.length) return true
-				this.activeSuggestion = Math.min(this.activeSuggestion + 1, this.suggestions.length - 1)
+				this.activeEditorState.suggestion = Math.min(this.activeEditorState.suggestion + 1, this.suggestions.length - 1)
 			},
 			acceptSuggestion: function () {
 				if (!this.suggestions.length) return true
-				this.editor.insertText(this.editor.getSelection().index, this.suggestions[this.activeSuggestion].value)
+				const suggestion = this.suggestions[this.activeEditorState.suggestion].value
+				editor.insertText(this.activeEditorState.index, suggestion)
+				editor.setSelection(this.activeEditorState.index + suggestion.length, 0)
+				this.activeEditorState.suggestion = 0
+			},
+			updateActiveSuggestion: function (newSuggestion) {
+				this.activeEditorState.suggestion = newSuggestion
+				this.acceptSuggestion()
+				this.suggestions = []
 			}
 		},
 		components: { VueEditor, SuggestionOverlay }
@@ -121,11 +135,12 @@
 				padding: 25px 0 15px 0 !important;
 			}
 			> .ql-container {
-				border-radius: 18px;
-				margin: 0 10px 10px 10px;
+				$borderWidth: 8px;
+				border-radius: 16px;
+				margin: 0 $borderWidth $borderWidth 10px;
 				padding: 10px;
 				border: none;
-				box-shadow: inset 0 0 10px 0px rgb(0 0 0 / 30%);
+				box-shadow: inset 0 0 10px 0px rgb(0 0 0 / 40%);
 			}
 		}
 	}
