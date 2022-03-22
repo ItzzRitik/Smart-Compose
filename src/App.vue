@@ -313,14 +313,16 @@
 						transition: transform 0.1s ease-out;
 						backface-visibility: hidden;
 
+						$width: 80px;
 						&::after {
 							position: absolute;
-							width: 30px;
+							width: $width;
 							height: 100%;
-							left: - 30px;
+							left: -$width;
 							content: '';
 							background: white;
-							opacity: 0.3;
+							opacity: 0.4;
+							clip-path: polygon(15% 0, 0 100%, 25% 100%, 40% 0, 75% 0, 60% 100%, 85% 100%, 100% 0);
 							transition: transform 0.3s ease-out;
 						}
 
@@ -329,7 +331,7 @@
 						}
 						&:hover {
 							&::after {
-								transform: translateX(calc(230px + 30px));
+								transform: translateX(calc(230px + #{$width}));
 							}
 						}
 					}
@@ -360,7 +362,7 @@
 			border: 2px solid white;
 			border-top-color: transparent;
 			border-bottom-color: transparent;
-			animation: spinner 0.5s linear infinite;
+			animation: spinner 0.38s linear infinite;
 		}
 
 		@keyframes spinner {
