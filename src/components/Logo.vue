@@ -10,7 +10,7 @@
 		position: absolute;
 		width: 100px;
 		height: 100px;
-		margin-top: 12px;
+		margin-top: 8px;
 		stroke-width: 15;
 		stroke-dasharray: 1790;
 		stroke-dashoffset: 1790;
@@ -27,11 +27,7 @@
 	}
 
 	@keyframes loadLogo {
-		0% {
-			stroke-dashoffset: 1790;
-		}
-		100% {
-			stroke-dashoffset: 0;
-		}
+		0% { stroke-dashoffset: 1790; }
+		100% { stroke-dashoffset: 0; }
 	}
 </style>

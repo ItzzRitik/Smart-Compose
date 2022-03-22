@@ -1,8 +1,10 @@
 <template>
-	<div :class="`smartCompose ${appLoading ? '' : 'loaded'}`">
-		<span v-if="appLoading" class="loader" />
-		<Logo v-if="appLoading" />
-		<VueEditor ref="vEditor" v-model="editorContent" :editor-toolbar="customToolbar" />
+	<div class="smartComposeApp">
+		<span v-show="appLoading" class="loader" />
+		<Logo v-show="appLoading" />
+		<div :class="`smartCompose ${appLoading ? '' : 'loaded'}`">
+			<VueEditor ref="vEditor" v-model="editorContent" :editor-toolbar="customToolbar" />
+		</div>
 		<SuggestionOverlay :suggestions=suggestions :activeSuggestion=activeEditorState.suggestion
 			:suggestionRect=suggestionRect :updateActiveSuggestion=updateActiveSuggestion />
 	</div>
@@ -24,13 +26,16 @@
 	let fontStyles = ''
 	fontList.forEach(function (font) {
 		const fontName = font.toLowerCase().replace(/\s/g, '-')
-		fontStyles += '.ql-snow .ql-picker.ql-font .ql-picker-label[data-value=' + fontName + ']::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value=' + fontName + ']::before {' +
-			"content: '" + font + "';" +
-			"font-family: '" + font + "', sans-serif;" +
-			'}' +
-			'.ql-font-' + fontName + '{' +
-			" font-family: '" + font + "', sans-serif;" +
-			'}'
+		fontStyles += `
+			.ql-snow .ql-picker.ql-font .ql-picker-label[data-value=${fontName}]::before,
+			.ql-snow .ql-picker.ql-font .ql-picker-item[data-value=${fontName}]::before {
+				content: '${font}';
+				font-family: '${font}', sans-serif;
+			}
+			.ql-font-${fontName} {
+				font-family: '${font}', sans-serif;
+			}
+		`
 	})
 
 	const node = document.createElement('style')
@@ -49,7 +54,7 @@
 			customToolbar: [
 				[{ font: fonts.whitelist }],
 				[{ header: [false, 1, 2, 3, 4, 5, 6] }],
-				['bold', 'italic', 'underline', 'strike'], // toggled buttons
+				['bold', 'italic', 'underline', 'strike'],
 				[
 					{ align: '' },
 					{ align: 'center' },
@@ -68,7 +73,7 @@
 			const res = await fetch('/sentences.json')
 			const sentences = await res.json()
 			this.sentences = sentences
-			setTimeout(() => (this.appLoading = false), 500)
+			setTimeout(() => (this.appLoading = false), 600)
 		},
 		mounted () {
 			const app = this
@@ -160,26 +165,119 @@
 	body {
 		background: var(--gradientViolet);
 	}
-	.smartCompose {
-		$duration: 0.28s;
-
+	.smartComposeApp {
 		position: relative;
-		width: 150px;
-		height: 150px;
-		background: transparent;
+		width: 100%;
+		height: 100%;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		box-shadow: 0 0 0px 0px rgb(0 0 0 / 40%);
-		border-radius: 999px;
-		will-change: width, height, background;
-		transition: all $duration ease-out, border-radius 0.05s ease-out;
 		overflow: hidden;
 
-		> .loader {
+		.smartCompose {
+			$duration: 0.28s;
+
+			position: relative;
+			width: 95%;
+			height: 90%;
+			background: transparent;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			box-shadow: 0 0 0px 0px rgb(0 0 0 / 40%);
+			border-radius: 999px;
+			transform: scale(0);
+			will-change: transform;
+			transition: all $duration ease-out, border-radius 0.05s ease-out;
+			overflow: hidden;
+
+			> .quillWrapper {
+				position: relative;
+				width: 100%;
+				height: 100%;
+				background: white;
+				display: flex;
+				flex-direction: column;
+				opacity: 0;
+				transition: opacity $duration ease-out;
+
+				> .ql-toolbar {
+					$radius: 10px;
+					text-align: center;
+					border: none;
+					padding: 25px 10px 15px 10px !important;
+
+					.ql-picker-label {
+						border-radius: 999px;
+					}
+					.ql-picker-options {
+						border-radius: $radius;
+						animation: showPicker 0.1s ease-in-out both;
+						transform-origin: 50% 0;
+						padding: 0;
+						background: var(--colorAccent);
+						box-shadow: 0 0 30px 2px rgb(var(--colorAccentRGB) / 40%);
+
+						> span {
+							min-width: 150px;
+							padding: 8px 20px;
+							background: white;
+							border: 1px solid var(--colorAccent);
+							border-top-width: 0px;
+							color: black;
+							font-size: 14px;
+							cursor: pointer;
+
+							&:hover {
+								background: rgb(255 255 255 / 80%);
+							}
+							&:active {
+								background: var(--colorAccent);
+								color: white;
+							}
+
+							&:first-of-type {
+								border-top-width: 1px;
+								border-top-left-radius: $radius - 1;
+								border-top-right-radius: $radius - 1;
+							}
+							&:last-of-type {
+								border-bottom-left-radius: $radius - 1;
+								border-bottom-right-radius: $radius - 1;
+							}
+						}
+					}
+					@keyframes showPicker {
+						0% { transform: scaleY(0); }
+						100% { transform: scaleY(1); }
+					}
+				}
+				> .ql-container {
+					$borderWidth: 8px;
+					border-radius: 16px;
+					margin: 0 $borderWidth $borderWidth 10px;
+					padding: 10px;
+					border: none;
+					box-shadow: inset 0 0 10px 0px rgb(0 0 0 / 40%);
+				}
+			}
+
+			&.loaded {
+				transform: scale(1);
+				background: white;
+				box-shadow: 0 0 30px 2px rgb(0 0 0 / 40%);
+				border-radius: 20px;
+
+				> .quillWrapper {
+					opacity: 1;
+				}
+			}
+		}
+
+		.loader {
 			position: absolute;
-			width: 100%;
-			height: 100%;
+			width: 150px;
+			height: 150px;
 			border-radius: 999px;
 			border: 2px solid white;
 			border-top-color: transparent;
@@ -190,43 +288,6 @@
 		@keyframes spinner {
 			0% { transform: rotate(0deg); }
 			100% { transform: rotate(360deg); }
-		}
-
-		> .quillWrapper {
-			position: relative;
-			width: 100%;
-			height: 100%;
-			background: white;
-			display: flex;
-			flex-direction: column;
-			opacity: 0;
-			transition: opacity $duration ease-out;
-
-			> .ql-toolbar {
-				text-align: center;
-				border: none;
-				padding: 25px 0 15px 0 !important;
-			}
-			> .ql-container {
-				$borderWidth: 8px;
-				border-radius: 16px;
-				margin: 0 $borderWidth $borderWidth 10px;
-				padding: 10px;
-				border: none;
-				box-shadow: inset 0 0 10px 0px rgb(0 0 0 / 40%);
-			}
-		}
-
-		&.loaded {
-			width: 95%;
-			height: 90%;
-			background: white;
-			box-shadow: 0 0 30px 2px rgb(0 0 0 / 40%);
-			border-radius: 20px;
-
-			> .quillWrapper {
-				opacity: 1;
-			}
 		}
 	}
 </style>

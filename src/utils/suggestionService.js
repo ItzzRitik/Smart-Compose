@@ -1,29 +1,52 @@
-const lineEnd = [' ', '\t', '\n', '\r', '\f', '\v']
+const lineBreak = [' ', '\t', '\n', '\r', '\f', '\v']
+const lineEndChar = ['.', ',', '!', '?', ';', ')', ']', '}']
 
-export default async function getSuggestions (sentences = [], text, index) {
+export default async function getSuggestions (sentences = [], text, tokenEndIndex, mode = 'sentence') {
 	return new Promise((resolve, reject) => {
-		if (!text || !lineEnd.includes(text.charAt(index)) || lineEnd.includes(text.charAt(index - 1))) return resolve([])
+		if (!text || !lineBreak.includes(text.charAt(tokenEndIndex))) return resolve([])
 
-		const wordStart = Math.max(text.lastIndexOf(' ', index - 2) + 1, text.lastIndexOf('\n', index - 2) + 1)
-		let wordEnd = Math.min(text.indexOf(' ', wordStart), text.indexOf('\n', wordStart))
-		wordEnd = wordEnd === -1 ? text.length : wordEnd
+		let tokenStartIndex = 0
+		let searchToken = ''
+		if (mode === 'sentence') {
+			for (let i = tokenEndIndex; i >= 0; i--) {
+				if (lineEndChar.includes(text.charAt(i))) {
+					tokenStartIndex = i + 1
+					break
+				}
+			}
+			searchToken = text.substring(tokenStartIndex, tokenEndIndex).toLowerCase()
+		} else {
+			if (lineBreak.includes(text.charAt(tokenEndIndex - 1))) return resolve([])
+			for (let i = tokenEndIndex; i >= 0; i--) {
+				if (text.charAt(i) === ' ') {
+					tokenStartIndex = i + 1
+					break
+				}
+			}
+			searchToken = text.substring(tokenStartIndex, tokenEndIndex).toLowerCase().trim()
+		}
 
-		const activeWord = text.substring(wordStart, wordEnd).trim()
-		if (!activeWord) return resolve([])
+		if (!searchToken) return resolve([])
 
 		const suggestions = new Set()
 		for (const sentence of sentences) {
-			sentence.startsWith(activeWord) && sentence.substring(activeWord.length, sentence.length).length >= 10 && suggestions.add(sentence)
+			sentence.toLowerCase().startsWith(searchToken) && sentence.substring(searchToken.length, sentence.length).length >= 10 && suggestions.add(sentence)
 		}
+
 		if (suggestions.size < 5) {
 			for (const sentence of sentences) {
-				sentence.split(' ').includes(activeWord) && suggestions.add(sentence)
+				if (!sentence.includes(searchToken)) continue
+				const parseSentence = sentence.substring(sentence.indexOf(searchToken), sentence.length)
+				parseSentence.substring(searchToken.length, sentence.length).length >= 10 && suggestions.add(parseSentence)
 			}
 		}
 
 		let suggestionsArr = Array.from(suggestions)
 		suggestionsArr.sort((a, b) => a.length - b.length)
-		suggestionsArr = suggestionsArr.slice(0, 5).map((suggestion) => ({ display: suggestion, value: suggestion.replace(activeWord, '') }))
+		suggestionsArr = suggestionsArr.slice(0, 5).map((suggestion) => ({
+			display: suggestion,
+			value: suggestion.substring(searchToken.length, suggestion.length)
+		}))
 
 		return resolve(suggestionsArr)
 	})
