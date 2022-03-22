@@ -1,8 +1,6 @@
-import sentences from '../assets/sentences.json'
-
 const lineEnd = [' ', '\t', '\n', '\r', '\f', '\v']
 
-export default async function getSuggestions (text, index) {
+export default async function getSuggestions (sentences = [], text, index) {
 	return new Promise((resolve, reject) => {
 		if (!text || !lineEnd.includes(text.charAt(index)) || lineEnd.includes(text.charAt(index - 1))) return resolve([])
 

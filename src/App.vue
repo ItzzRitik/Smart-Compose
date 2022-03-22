@@ -1,5 +1,7 @@
 <template>
-	<div class="smartCompose">
+	<div :class="`smartCompose ${appLoading ? '' : 'loaded'}`">
+		<span v-if="appLoading" class="loader" />
+		<Logo v-if="appLoading" />
 		<VueEditor ref="vEditor" v-model="editorContent" />
 		<SuggestionOverlay :suggestions=suggestions :activeSuggestion=activeEditorState.suggestion
 			:suggestionRect=suggestionRect :updateActiveSuggestion=updateActiveSuggestion />
@@ -9,6 +11,7 @@
 <script>
 	import { VueEditor } from 'vue2-editor'
 	import SuggestionOverlay from './components/Suggestion.vue'
+	import Logo from './components/Logo.vue'
 	import getSuggestions from './utils/suggestionService'
 
 	let editor
@@ -16,11 +19,19 @@
 	export default {
 		name: 'App',
 		data: () => ({
+			appLoading: true,
+			sentences: [],
 			editorContent: '<p>Hello There, Welcome to Smart Compose Demo!</p>',
 			suggestions: [],
 			activeEditorState: { suggestion: 0, index: 0 },
 			suggestionRect: { top: 0, left: 0 }
 		}),
+		async created () {
+			const res = await fetch('/sentences.json')
+			const sentences = await res.json()
+			this.sentences = sentences
+			setTimeout(() => (this.appLoading = false), 500)
+		},
 		mounted () {
 			const app = this
 			editor = app.$refs.vEditor.quill
@@ -42,7 +53,7 @@
 
 				if (event === 'selection-change') {
 					clearTimeout(suggestionService)
-					suggestionService = setTimeout(() => getSuggestions(text, data?.index)
+					suggestionService = setTimeout(() => getSuggestions(app.sentences, text, data?.index)
 						.then((suggestionList) => {
 							app.activeEditorState.index = data?.index
 							app.suggestions = suggestionList
@@ -81,7 +92,7 @@
 				this.suggestions = []
 			}
 		},
-		components: { VueEditor, SuggestionOverlay }
+		components: { VueEditor, SuggestionOverlay, Logo }
 	}
 </script>
 
@@ -112,22 +123,46 @@
 		background: var(--gradientViolet);
 	}
 	.smartCompose {
-		position: relative;
-		width: 95%;
-		height: 90%;
+		$duration: 0.28s;
 
+		position: relative;
+		width: 150px;
+		height: 150px;
+		background: transparent;
 		display: flex;
 		justify-content: center;
-		border-radius: 20px;
-		box-shadow: 0 0 30px 2px rgb(0 0 0 / 40%);
+		align-items: center;
+		box-shadow: 0 0 0px 0px rgb(0 0 0 / 40%);
+		border-radius: 999px;
+		will-change: width, height, background;
+		transition: all $duration ease-out, border-radius 0.05s ease-out;
 		overflow: hidden;
+
+		> .loader {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			border-radius: 999px;
+			border: 2px solid white;
+			border-top-color: transparent;
+			border-bottom-color: transparent;
+			animation: spinner 0.5s linear infinite;
+		}
+
+		@keyframes spinner {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
 
 		> .quillWrapper {
 			position: relative;
 			width: 100%;
+			height: 100%;
 			background: white;
 			display: flex;
 			flex-direction: column;
+			opacity: 0;
+			transition: opacity $duration ease-out;
 
 			> .ql-toolbar {
 				text-align: center;
@@ -141,6 +176,18 @@
 				padding: 10px;
 				border: none;
 				box-shadow: inset 0 0 10px 0px rgb(0 0 0 / 40%);
+			}
+		}
+
+		&.loaded {
+			width: 95%;
+			height: 90%;
+			background: white;
+			box-shadow: 0 0 30px 2px rgb(0 0 0 / 40%);
+			border-radius: 20px;
+
+			> .quillWrapper {
+				opacity: 1;
 			}
 		}
 	}
