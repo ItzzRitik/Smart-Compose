@@ -312,6 +312,7 @@
 						font-size: 14px;
 						transition: transform 0.1s ease-out;
 						backface-visibility: hidden;
+						overflow: hidden;
 
 						$width: 80px;
 						&::after {
