@@ -26,6 +26,7 @@
 		box-shadow: 0 0 30px 2px rgb(var(--colorAccentRGB) / 40%);
 		flex-direction: column;
 		transform-origin: 50% 0;
+		user-select: none;
 		transition: all 0.1s ease-out;
 
 		> span {

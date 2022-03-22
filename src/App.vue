@@ -4,6 +4,12 @@
 		<Logo v-show="appLoading" />
 		<div :class="`smartCompose ${appLoading ? '' : 'loaded'}`">
 			<VueEditor ref="vEditor" v-model="editorContent" :editor-toolbar="customToolbar" />
+			<div class="footer">
+				<div :class="`suggestionToggle ${suggestionMode === 'sentence' ? '' : 'flip'}`" @click="toggleSuggestionMode">
+					<p class="label">sentence based suggestion</p>
+					<p class="label">word based suggestion</p>
+				</div>
+			</div>
 		</div>
 		<SuggestionOverlay :suggestions=suggestions :activeSuggestion=activeEditorState.suggestion
 			:suggestionRect=suggestionRect :updateActiveSuggestion=updateActiveSuggestion />
@@ -46,11 +52,12 @@
 		name: 'App',
 		data: () => ({
 			appLoading: true,
-			sentences: [],
 			editorContent: '<p class="ql-font-quicksand"><span class="ql-font-quicksand">Hello There, Welcome to Smart Compose Demo!</span></p>',
+			sentences: [],
 			suggestions: [],
-			activeEditorState: { suggestion: 0, index: 0 },
+			suggestionMode: 'sentence',
 			suggestionRect: { top: 0, left: 0 },
+			activeEditorState: { suggestion: 0, index: 0 },
 			customToolbar: [
 				[{ font: fonts.whitelist }],
 				[{ header: [false, 1, 2, 3, 4, 5, 6] }],
@@ -96,7 +103,7 @@
 
 				if (event === 'selection-change') {
 					clearTimeout(suggestionService)
-					suggestionService = setTimeout(() => getSuggestions(app.sentences, text, data?.index)
+					suggestionService = setTimeout(() => getSuggestions(app.sentences, text, data?.index, app.suggestionMode)
 						.then((suggestionList) => {
 							app.activeEditorState.index = data?.index
 							app.suggestions = suggestionList
@@ -133,6 +140,9 @@
 				this.activeEditorState.suggestion = newSuggestion
 				this.acceptSuggestion()
 				this.suggestions = []
+			},
+			toggleSuggestionMode: function () {
+				this.suggestionMode = this.suggestionMode === 'sentence' ? 'word' : 'sentence'
 			}
 		},
 		components: { VueEditor, SuggestionOverlay, Logo }
@@ -142,8 +152,8 @@
 <style lang="scss">
 	@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500&display=swap');
 	html, body {
-		width: 100vw;
-		height: 100vh;
+		width: 100%;
+		height: 100%;
 		font-family: Quicksand, Helvetica, Arial, sans-serif;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
@@ -178,10 +188,11 @@
 			$duration: 0.28s;
 
 			position: relative;
-			width: 95%;
-			height: 90%;
+			width: 96%;
+			height: 94%;
 			background: transparent;
 			display: flex;
+			flex-direction: column;
 			justify-content: center;
 			align-items: center;
 			box-shadow: 0 0 0px 0px rgb(0 0 0 / 40%);
@@ -194,17 +205,21 @@
 			> .quillWrapper {
 				position: relative;
 				width: 100%;
-				height: 100%;
+				height: calc(100% - 40px);
 				background: white;
 				display: flex;
 				flex-direction: column;
 				opacity: 0;
+				overflow: hidden;
 				transition: opacity $duration ease-out;
 
 				> .ql-toolbar {
 					$radius: 10px;
+					flex-grow: 1;
+					flex-shrink: 0;
 					text-align: center;
 					border: none;
+					overflow: hidden;
 					padding: 25px 10px 15px 10px !important;
 
 					.ql-picker-label {
@@ -255,10 +270,74 @@
 				> .ql-container {
 					$borderWidth: 8px;
 					border-radius: 16px;
-					margin: 0 $borderWidth $borderWidth 10px;
+					max-height: calc(100% - 75px);
+					flex-shrink: 1;
+					margin: 0 $borderWidth 0 $borderWidth;
 					padding: 10px;
 					border: none;
 					box-shadow: inset 0 0 10px 0px rgb(0 0 0 / 40%);
+				}
+			}
+
+			> .footer {
+				width: 100%;
+				height: 40px;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				padding: 4px 20px;
+				perspective: 1000px;
+
+				> .suggestionToggle {
+					position: relative;
+					width: 230px;
+					height: 90%;
+					user-select: none;
+					cursor: pointer;
+					transform-style: preserve-3d;
+					transition: transform 0.3s ease-out;
+
+					> .label {
+						position: absolute;
+						width: 100%;
+						height: 100%;
+						display: flex;
+						justify-content: center;
+						align-items: center;
+						text-transform: capitalize;
+						color: white;
+						background: var(--colorAccent);
+						box-shadow: 0 0 5px 2px rgb(var(--colorAccentRGB) / 40%);
+						border-radius: 999px;
+						padding: 0 15px;
+						font-size: 14px;
+						transition: transform 0.1s ease-out;
+						backface-visibility: hidden;
+
+						&::after {
+							position: absolute;
+							width: 30px;
+							height: 100%;
+							left: - 30px;
+							content: '';
+							background: white;
+							opacity: 0.3;
+							transition: transform 0.3s ease-out;
+						}
+
+						&:last-of-type{
+							transform: rotateY(180deg);
+						}
+						&:hover {
+							&::after {
+								transform: translateX(calc(230px + 30px));
+							}
+						}
+					}
+
+					&.flip {
+						transform: rotateY(180deg);
+					}
 				}
 			}
 
