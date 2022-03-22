@@ -219,7 +219,6 @@
 					flex-shrink: 0;
 					text-align: center;
 					border: none;
-					overflow: hidden;
 					padding: 25px 10px 15px 10px !important;
 
 					.ql-picker-label {
