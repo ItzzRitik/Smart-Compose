@@ -2,29 +2,67 @@
 	<div :class="`smartCompose ${appLoading ? '' : 'loaded'}`">
 		<span v-if="appLoading" class="loader" />
 		<Logo v-if="appLoading" />
-		<VueEditor ref="vEditor" v-model="editorContent" />
+		<VueEditor ref="vEditor" v-model="editorContent" :editor-toolbar="customToolbar" />
 		<SuggestionOverlay :suggestions=suggestions :activeSuggestion=activeEditorState.suggestion
 			:suggestionRect=suggestionRect :updateActiveSuggestion=updateActiveSuggestion />
 	</div>
 </template>
 
 <script>
-	import { VueEditor } from 'vue2-editor'
+	import { VueEditor, Quill } from 'vue2-editor'
 	import SuggestionOverlay from './components/Suggestion.vue'
 	import Logo from './components/Logo.vue'
 	import getSuggestions from './utils/suggestionService'
 
 	let editor
+	const fontList = ['Quicksand', 'Arial', 'Courier', 'Garamond', 'Tahoma', 'Times New Roman', 'Verdana']
+	const fontNames = fontList.map(font => font.toLowerCase().replace(/\s/g, '-'))
+	const fonts = Quill.import('formats/font')
+	fonts.whitelist = fontNames
+	Quill.register(fonts, true)
+
+	let fontStyles = ''
+	fontList.forEach(function (font) {
+		const fontName = font.toLowerCase().replace(/\s/g, '-')
+		fontStyles += '.ql-snow .ql-picker.ql-font .ql-picker-label[data-value=' + fontName + ']::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value=' + fontName + ']::before {' +
+			"content: '" + font + "';" +
+			"font-family: '" + font + "', sans-serif;" +
+			'}' +
+			'.ql-font-' + fontName + '{' +
+			" font-family: '" + font + "', sans-serif;" +
+			'}'
+	})
+
+	const node = document.createElement('style')
+	node.innerHTML = fontStyles
+	document.body.appendChild(node)
 
 	export default {
 		name: 'App',
 		data: () => ({
 			appLoading: true,
 			sentences: [],
-			editorContent: '<p>Hello There, Welcome to Smart Compose Demo!</p>',
+			editorContent: '<p class="ql-font-quicksand"><span class="ql-font-quicksand">Hello There, Welcome to Smart Compose Demo!</span></p>',
 			suggestions: [],
 			activeEditorState: { suggestion: 0, index: 0 },
-			suggestionRect: { top: 0, left: 0 }
+			suggestionRect: { top: 0, left: 0 },
+			customToolbar: [
+				[{ font: fonts.whitelist }],
+				[{ header: [false, 1, 2, 3, 4, 5, 6] }],
+				['bold', 'italic', 'underline', 'strike'], // toggled buttons
+				[
+					{ align: '' },
+					{ align: 'center' },
+					{ align: 'right' },
+					{ align: 'justify' }
+				],
+				['blockquote', 'code-block'],
+				[{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
+				[{ indent: '-1' }, { indent: '+1' }],
+				[{ color: [] }, { background: [] }],
+				['link', 'image', 'video'],
+				['clean']
+			]
 		}),
 		async created () {
 			const res = await fetch('/sentences.json')
