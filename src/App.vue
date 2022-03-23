@@ -2,11 +2,12 @@
 	<div class="smartComposeApp">
 		<span v-show="appLoading" class="loader" />
 		<Logo v-show="appLoading" />
-		<div :class="`smartCompose ${appLoading ? '' : 'loaded'}`">
+		<div :class="`smartCompose ${appLoading ? 'loading' : ''}`">
 			<VueEditor ref="vEditor" v-model="editorContent" :editor-toolbar="customToolbar" />
 			<div class="footer">
-				<div :class="`suggestionToggle ${suggestionMode === 'sentence' ? '' : 'flip'}`" @click="toggleSuggestionMode">
-					<p class="label">sentence based suggestion</p>
+				<div :class="`suggestionToggle ${suggestionMode === 'sentence' ? '' : 'flip'} ${suggestionLoading ? 'loading' : ''}`"
+					@click="toggleSuggestionMode">
+					<p class="label">{{suggestionLoading ? 'loading typemate suggestions' : 'sentence based suggestion'}}</p>
 					<p class="label">word based suggestion</p>
 				</div>
 			</div>
@@ -52,6 +53,7 @@
 		name: 'App',
 		data: () => ({
 			appLoading: true,
+			suggestionLoading: true,
 			editorContent: '<p class="ql-font-quicksand"><span class="ql-font-quicksand">Hello There, Welcome to Smart Compose Demo!</span></p>',
 			sentences: [],
 			suggestions: [],
@@ -76,16 +78,16 @@
 				['clean']
 			]
 		}),
-		async created () {
+		async mounted () {
+			const app = this
+			setTimeout(() => (app.appLoading = false), 600)
+			editor = app.$refs.vEditor.quill
+			let suggestionService
+
 			const res = await fetch('/sentences.json')
 			const sentences = await res.json()
 			this.sentences = sentences
-			setTimeout(() => (this.appLoading = false), 600)
-		},
-		mounted () {
-			const app = this
-			editor = app.$refs.vEditor.quill
-			let suggestionService
+			this.suggestionLoading = false
 
 			editor.on('editor-change', async function (event, data) {
 				const selection = editor.root.ownerDocument.getSelection()
@@ -190,14 +192,14 @@
 			position: relative;
 			width: 96%;
 			height: 94%;
-			background: transparent;
 			display: flex;
 			flex-direction: column;
 			justify-content: center;
 			align-items: center;
-			box-shadow: 0 0 0px 0px rgb(0 0 0 / 40%);
-			border-radius: 999px;
-			transform: scale(0);
+			transform: scale(1);
+			background: white;
+			box-shadow: 0 0 30px 2px rgb(0 0 0 / 40%);
+			border-radius: 20px;
 			will-change: transform;
 			transition: all $duration ease-out, border-radius 0.05s ease-out;
 			overflow: hidden;
@@ -209,7 +211,7 @@
 				background: white;
 				display: flex;
 				flex-direction: column;
-				opacity: 0;
+				opacity: 1;
 				overflow: hidden;
 				transition: opacity $duration ease-out;
 
@@ -288,13 +290,17 @@
 				perspective: 1000px;
 
 				> .suggestionToggle {
+					$suggestionWidth: 260px;
+					$glazeWidth: 80px;
+
 					position: relative;
-					width: 230px;
+					width: $suggestionWidth;
 					height: 90%;
 					user-select: none;
 					cursor: pointer;
+					transform: rotateY(0);
 					transform-style: preserve-3d;
-					transition: transform 0.3s ease-out;
+					transition: all 0.3s ease-out;
 
 					> .label {
 						position: absolute;
@@ -310,16 +316,15 @@
 						border-radius: 999px;
 						padding: 0 15px;
 						font-size: 14px;
-						transition: transform 0.1s ease-out;
+						transition: all 0.1s ease-out;
 						backface-visibility: hidden;
 						overflow: hidden;
 
-						$width: 80px;
 						&::after {
 							position: absolute;
-							width: $width;
+							width: $glazeWidth;
 							height: 100%;
-							left: -$width;
+							left: -$glazeWidth;
 							content: '';
 							background: white;
 							opacity: 0.4;
@@ -332,25 +337,46 @@
 						}
 						&:hover {
 							&::after {
-								transform: translateX(calc(230px + #{$width}));
+								transform: translateX(calc(#{$suggestionWidth} + #{$glazeWidth}));
 							}
 						}
 					}
 
+					&.loading {
+						pointer-events: none;
+						transform: rotateY(360deg);
+
+						> .label:first-of-type {
+							background: white;
+							color: black;
+							box-shadow: 0 0 0px 2px rgb(var(--colorAccentRGB) / 100%);
+
+							&::after {
+								background: var(--colorAccent);
+								animation: glazeLoading 0.5s ease-in-out infinite;
+							}
+						}
+
+						@keyframes glazeLoading {
+							0% { transform: translateX(0); }
+							100% { transform: translateX(calc(#{$suggestionWidth} + #{$glazeWidth})); }
+						}
+					}
 					&.flip {
 						transform: rotateY(180deg);
 					}
 				}
 			}
 
-			&.loaded {
-				transform: scale(1);
-				background: white;
-				box-shadow: 0 0 30px 2px rgb(0 0 0 / 40%);
-				border-radius: 20px;
+			&.loading {
+				transform: scale(0);
+				background: transparent;
+				box-shadow: 0 0 0px 0px rgb(0 0 0 / 40%);
+				border-radius: 999px;
+				pointer-events: none;
 
 				> .quillWrapper {
-					opacity: 1;
+					opacity: 0;
 				}
 			}
 		}
